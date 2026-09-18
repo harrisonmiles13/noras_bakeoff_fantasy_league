@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E7EEE4">
+<title>Fantasy Bakeoff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tent:#E7EEE4; --card:#FCFBF6; --ink:#1F2D22; --jam:#A8324E;
+  --butter:#E0A93B; --leaf:#5F8B5C; --muted:#66795F; --line:#C7D5C2;
+  --dim:#F2EFE7; --avS:40%; --avL:72%; --avT:#2A2A2A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --tent:#161E18; --card:#1E2821; --ink:#E4EBE0; --jam:#E28AA0;
+    --butter:#E5C273; --leaf:#8CC085; --muted:#9AAE95; --line:#33422F;
+    --dim:#232D25; --avS:28%; --avL:38%; --avT:#F2F6F0;
+  }
+}
+:root[data-theme="dark"]{
+  --tent:#161E18; --card:#1E2821; --ink:#E4EBE0; --jam:#E28AA0;
+  --butter:#E5C273; --leaf:#8CC085; --muted:#9AAE95; --line:#33422F;
+  --dim:#232D25; --avS:28%; --avL:38%; --avT:#F2F6F0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--tent);color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px;line-height:1.45;padding-bottom:84px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:620px;margin:0 auto;padding:0 16px}
+.num{font-family:Fraunces,Georgia,serif;font-variant-numeric:tabular-nums}
+.sub{color:var(--muted);font-size:13px}
+.small{font-size:13px}
+h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:32px;line-height:1.05;margin:0}
+h2{font-family:Fraunces,Georgia,serif;font-size:17px;font-weight:600;margin:0 0 8px}
+header{padding-top:24px}
+.tag{color:var(--muted);font-size:13px;margin:6px 0 12px;max-width:44ch}
+.bunting{display:block;width:100%;height:16px}
+main{padding-top:18px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.footnote{color:var(--muted);font-size:12px;margin:8px 0 0}
+.pad{padding:8px 0 0}
+.mode{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);
+  border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin-bottom:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--butter);flex:none}
+.dot.live{background:var(--leaf)}
+.dot.bad{background:var(--jam)}
+.tally{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.row+.row{border-top:1px solid var(--line)}
+.rowhead{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;width:100%;
+  padding:14px;background:none;border:0;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.rank{font-size:25px;color:var(--line);line-height:1;font-family:Fraunces,Georgia,serif}
+.row.leader .rank,.row.leader .score{color:var(--jam)}
+.who{display:flex;flex-direction:column;min-width:0}
+.name{font-weight:600}
+.score{font-size:29px;line-height:1;font-family:Fraunces,Georgia,serif;font-variant-numeric:tabular-nums}
+.roster{padding:0 14px 12px 62px}
+.rosterrow{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;
+  padding:6px 0;border-top:1px dotted var(--line)}
+.rosterrow.gone{color:var(--muted)}
+.rosterrow.gone .name{text-decoration:line-through}
+.av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:hsl(var(--h) var(--avS) var(--avL));color:var(--avT);font-size:12px;font-weight:600}
+.av.lg{width:40px;height:40px;font-size:15px}
+.weekbar{display:flex;align-items:center;justify-content:space-between;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.weeklabel{text-align:center;display:flex;flex-direction:column}
+.big{font-size:21px;font-family:Fraunces,Georgia,serif}
+.step{width:44px;height:44px;border-radius:8px;border:1px solid var(--line);background:var(--tent);
+  color:var(--ink);font-size:22px;line-height:1;cursor:pointer}
+.bakercard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.bakercard.out{background:var(--dim);color:var(--muted)}
+.bakerhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.bakerid{display:flex;gap:10px;align-items:center;min-width:0}
+.pts{font-size:20px;font-family:Fraunces,Georgia,serif;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{border:1px solid var(--line);background:var(--tent);color:var(--muted);border-radius:999px;
+  padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip.on{background:var(--leaf);border-color:var(--leaf);color:#12200F}
+.chip.danger.on{background:var(--jam);border-color:var(--jam);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--jam);outline-offset:2px}
+.btn{border-radius:8px;padding:11px 14px;font:inherit;font-weight:500;cursor:pointer;
+  border:1px solid var(--line);background:var(--tent);color:var(--ink);width:100%;margin-top:10px}
+.btn.primary{background:var(--jam);border-color:var(--jam);color:#fff}
+.btn.danger{color:var(--jam);border-color:var(--jam);background:transparent}
+.btn.quiet{background:transparent;color:var(--muted)}
+.field{display:block;width:100%;margin-bottom:8px;padding:11px 12px;border:1px solid var(--line);
+  border-radius:8px;background:var(--tent);font:inherit;color:var(--ink)}
+select.field{appearance:none;padding-right:34px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
+                   linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 19px,calc(100% - 13px) 19px;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.picklabel{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.ruleline{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;
+  border-top:1px dotted var(--line);font-size:14px}
+.ruleline:first-of-type{border-top:0}
+.numfield{width:70px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;
+  background:var(--tent);font:inherit;text-align:right;color:var(--ink)}
+.setuprow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.setuprow .field{margin:0}
+pre.code{background:var(--tent);border:1px solid var(--line);border-radius:8px;padding:10px;
+  font-size:12px;overflow-x:auto;margin:8px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+ol.steps{margin:6px 0 0;padding-left:20px;font-size:14px}
+ol.steps li{margin-bottom:8px}
+.statusline{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.status{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--muted)}
+.status.in{border-color:var(--leaf);color:var(--leaf)}
+.banner{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.revealcard{border-top:1px dotted var(--line);padding-top:10px;margin-top:10px}
+.revealhead{display:flex;justify-content:space-between;align-items:baseline}
+.calls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.call{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--tent);min-width:0}
+.call span{display:block;color:var(--muted);font-size:11px}
+.call b{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.call.hit{border-color:var(--leaf);background:color-mix(in srgb,var(--leaf) 16%,transparent)}
+.call.miss{opacity:.5}
+.orderline{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.orderpill{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:13px}
+.orderpill .num{color:var(--jam);margin-right:4px}
+.onclock{margin:0}
+.onclock .num{color:var(--jam)}
+.pickgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pickbtn{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line);
+  border-radius:8px;background:var(--tent);font:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.boardcol{min-width:0}
+.boardhead{font-size:12px;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--line);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.boardpick{font-size:13px;padding:7px 0;border-bottom:1px dotted var(--line)}
+.gridscroll{overflow-x:auto}
+table.grid{border-collapse:collapse;width:100%;font-size:13px}
+.grid th,.grid td{padding:6px 8px;text-align:right;white-space:nowrap}
+.grid tbody th{text-align:left;font-weight:500}
+.grid thead th{color:var(--muted);font-weight:500;border-bottom:1px solid var(--line)}
+.grid tbody tr+tr th,.grid tbody tr+tr td{border-top:1px dotted var(--line)}
+.empty{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px 16px}
+.empty h3{font-family:Fraunces,Georgia,serif;font-size:19px;margin:0 0 6px;font-weight:600}
+.empty p{color:var(--muted);margin:0;font-size:14px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+  padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+.navinner{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.navbtn{padding:10px 2px;border:0;background:none;font:inherit;font-size:12px;color:var(--muted);
+  border-radius:8px;cursor:pointer}
+.navbtn.active{color:var(--jam);font-weight:600;background:var(--tent)}
+@media (max-width:380px){ .pickgrid{grid-template-columns:1fr} h1{font-size:28px} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Fantasy Bakeoff</h1>
+    <p class="tag">Series 17. Draft three bakers, then call the tent every week.</p>
+  </div>
+  <svg class="bunting" viewBox="0 0 240 16" preserveAspectRatio="none" aria-hidden="true" id="bunting"></svg>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<nav><div class="wrap navinner" id="nav"></div></nav>
+
+<script>
+const WEEKS = 10;
+
+const DEFAULTS = {
+  sb:15, hs:10, t1:8, t2:5, t3:3, tlast:-3, survive:2, out:-10, final:15, winner:30,
+  pStar:10, pTech:10, pOut:10, pSweep:10, pFinalist:15, pFinalAll:25, pWinner:50
+};
+const TEAM_RULES = [
+  ["sb","Star Baker"],["hs","Hollywood handshake, each"],["t1","Technical, 1st"],
+  ["t2","Technical, 2nd"],["t3","Technical, 3rd"],["tlast","Technical, last"],
+  ["survive","Survived the week"],["out","Eliminated"],["final","Reached the final"],
+  ["winner","Won the series"]
+];
+const PICK_RULES = [
+  ["pStar","Called Star Baker"],["pTech","Called the technical"],["pOut","Called who goes home"],
+  ["pSweep","All three in one week"],["pFinalist","Each correct finalist"],
+  ["pFinalAll","All three finalists"],["pWinner","Called the winner"]
+];
+const SERIES17 = [
+  ["b1","Clara","Hertfordshire"],["b2","Connie","London"],["b3","Danni","Dorset"],
+  ["b4","Gabe","West Midlands"],["b5","Gary","Nottinghamshire"],["b6","Mo","West Midlands"],
+  ["b7","Molly","London"],["b8","Moyin","Essex"],["b9","Nikki","London"],
+  ["b10","Shannon","Gloucestershire"],["b11","Tom","West Yorkshire"],["b12","Yannis","London"]
+];
+const DB_RULES = JSON.stringify({rules:{leagues:{"$league":{
+  ".read":"$league.length >= 16", ".write":"$league.length >= 16"}}}}, null, 2);
+
+function blank(){
+  return {
+    config:{
+      players:[1,2,3,4].map(i=>({id:"p"+i,name:""})),
+      bakers:SERIES17.map(([id,name,region])=>({id,name,region,note:""})),
+      rules:{...DEFAULTS}, locks:{}, seasonLocked:false
+    },
+    draft:{order:[],picks:[]}, results:{}, picks:{}, season:{}
+  };
+}
+
+/* ---------------- sync config ---------------- */
+
+const LS = "fantasy-bakeoff-s17";
+const LSS = LS + "-sync";
+let L = blank();
+let cfg = null;
+let live = false;
+let connectMsg = "";
+let connecting = false;
+
+function b64e(o){ return btoa(JSON.stringify(o)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function b64d(s){ return JSON.parse(atob(s.replace(/-/g,"+").replace(/_/g,"/"))); }
+
+function loadCfg(){
+  try{
+    const m = location.hash.match(/[#&]s=([A-Za-z0-9_\-]+)/);
+    if(m){
+      const j = b64d(m[1]);
+      if(j && j.base && j.league){
+        localStorage.setItem(LSS, JSON.stringify(j));
+        history.replaceState(null,"",location.pathname+location.search);
+      }
+    }
+  }catch(e){}
+  try{ const r = localStorage.getItem(LSS); cfg = r ? JSON.parse(r) : null; }catch(e){ cfg = null; }
+}
+const syncUrl = () => cfg ? cfg.base + "/leagues/" + cfg.league : "";
+function shareLink(){
+  if(!cfg) return "";
+  return location.origin + location.pathname + "#s=" + b64e(cfg);
+}
+function randId(n){
+  const a="abcdefghijkmnpqrstuvwxyz23456789"; let s="";
+  const buf=new Uint8Array(n);
+  (self.crypto||{getRandomValues:x=>x.forEach((_,i)=>x[i]=Math.floor(Math.random()*256))}).getRandomValues(buf);
+  for(let i=0;i<n;i++) s+=a[buf[i]%a.length];
+  return s;
+}
+
+/* ---------------- storage ---------------- */
+
+function lsRead(){ try{ const r=localStorage.getItem(LS); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function lsWrite(){ try{ localStorage.setItem(LS, JSON.stringify(L)); }catch(e){} }
+
+function merge(remote){
+  if(!remote || typeof remote!=="object") return;
+  const b=blank(), c=remote.config||{};
+  L={
+    config:{...b.config, ...c,
+      rules:{...DEFAULTS,...(c.rules||{})}, locks:c.locks||{},
+      players:c.players||b.config.players, bakers:c.bakers||b.config.bakers},
+    draft:{order:(remote.draft||{}).order||[],picks:(remote.draft||{}).picks||[]},
+    results:remote.results||{}, picks:remote.picks||{}, season:remote.season||{}
+  };
+}
+
+async function pull(){
+  if(!cfg) return;
+  try{
+    const r=await fetch(syncUrl()+".json",{cache:"no-store"});
+    if(!r.ok) throw new Error(r.status);
+    const d=await r.json();
+    if(d) merge(d);
+    live=true; lsWrite();
+  }catch(e){ live=false; }
+}
+
+async function push(path,value){
+  lsWrite();
+  if(!cfg) return;
+  try{
+    const r=await fetch(syncUrl()+"/"+path+".json",{
+      method:"PUT",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(value===undefined?null:value)});
+    live = r.ok;
+  }catch(e){ live=false; }
+}
+
+let es=null;
+function listen(){
+  if(!cfg || typeof EventSource==="undefined") return;
+  try{
+    if(es) es.close();
+    es=new EventSource(syncUrl()+".json");
+    const bump=async()=>{ await pull(); render(); };
+    es.addEventListener("put",bump);
+    es.addEventListener("patch",bump);
+    es.onerror=()=>{ live=false; };
+  }catch(e){}
+}
+
+async function connect(raw){
+  let base=String(raw||"").trim();
+  if(!base) throw new Error("Paste your database URL first.");
+  base=base.replace(/\.json.*$/,"").replace(/\/+$/,"");
+  if(!/^https?:\/\//.test(base)) base="https://"+base;
+  if(!/firebaseio\.com|firebasedatabase\.app/.test(base))
+    throw new Error("That does not look like a Realtime Database URL. It should end in firebaseio.com or firebasedatabase.app.");
+  const league=randId(18);
+  const url=base+"/leagues/"+league+".json";
+  let r;
+  try{
+    r=await fetch(url,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(L)});
+  }catch(e){
+    throw new Error("Could not reach the database. If you are running this from the Claude artifact link, sync only works on your own hosted copy: the artifact sandbox blocks outside connections.");
+  }
+  if(r.status===401||r.status===403) throw new Error("The database refused the write. Check the security rules are published exactly as shown below.");
+  if(!r.ok) throw new Error("The database returned "+r.status+". Check the URL.");
+  const g=await fetch(url,{cache:"no-store"});
+  if(!g.ok) throw new Error("Wrote fine but could not read back. Check the read rule.");
+  cfg={base,league};
+  localStorage.setItem(LSS,JSON.stringify(cfg));
+  live=true;
+  listen();
+}
+
+/* ---------------- identity ---------------- */
+
+let me=""; try{ me=localStorage.getItem(LS+"-me")||""; }catch(e){}
+function setMe(id){ me=id; try{ localStorage.setItem(LS+"-me",id); }catch(e){} }
+
+/* ---------------- helpers ---------------- */
+
+const players=()=>L.config.players.filter(p=>p.name.trim());
+const bakers =()=>L.config.bakers.filter(b=>b.name.trim());
+const bakerById=id=>L.config.bakers.find(b=>b.id===id);
+const playerById=id=>L.config.players.find(p=>p.id===id);
+const nameOf=id=>(bakerById(id)||{}).name||"nobody";
+function hue(s){ let h=0; for(const c of String(s)) h=(h*37+c.charCodeAt(0))%360; return h; }
+function initials(n){ const p=String(n).trim().split(/\s+/); return (p[0]||"?").slice(0,2).toUpperCase(); }
+const avatar=(n,big)=>'<span class="av'+(big?" lg":"")+'" style="--h:'+hue(n)+'" aria-hidden="true">'+initials(n)+'</span>';
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const entries=w=>L.results["w"+w]||{};
+const emptyEntry=e=>!e||(!e.sb&&!e.hs&&!e.tech&&!e.out&&!e.final&&!e.winner);
+const weekRecorded=w=>Object.values(entries(w)).some(e=>!emptyEntry(e));
+function weekResults(w){
+  const wk=entries(w); let star=null,tech=null; const outs=[];
+  for(const [bid,e] of Object.entries(wk)){
+    if(!e) continue;
+    if(e.sb) star=bid;
+    if(e.tech===1) tech=bid;
+    if(e.out) outs.push(bid);
+  }
+  return {star,tech,outs,recorded:weekRecorded(w)};
+}
+function seasonResults(){
+  const finalists=[]; let winner=null;
+  for(let w=1;w<=WEEKS;w++)
+    for(const [bid,e] of Object.entries(entries(w))){
+      if(!e) continue;
+      if(e.final&&!finalists.includes(bid)) finalists.push(bid);
+      if(e.winner) winner=bid;
+    }
+  if(winner&&!finalists.includes(winner)) finalists.push(winner);
+  return {finalists,winner,settled:finalists.length>0||!!winner};
+}
+const weekLocked=w=>!!L.config.locks[w]||weekRecorded(w);
+const seasonLocked=()=>!!L.config.seasonLocked||weekRecorded(2);
+
+function pointsFor(e){
+  const r=L.config.rules,x=e||{}; let p=0;
+  if(x.sb) p+=r.sb;
+  if(x.hs) p+=r.hs*x.hs;
+  if(x.tech===1) p+=r.t1; else if(x.tech===2) p+=r.t2;
+  else if(x.tech===3) p+=r.t3; else if(x.tech==="last") p+=r.tlast;
+  if(x.final) p+=r.final;
+  if(x.winner) p+=r.winner;
+  p+= x.out?r.out:r.survive;
+  return p;
+}
+
+function totals(){
+  const r=L.config.rules;
+  const recorded=[]; for(let w=1;w<=WEEKS;w++) if(weekRecorded(w)) recorded.push(w);
+  const outWeek={};
+  for(const w of recorded)
+    for(const [bid,e] of Object.entries(entries(w)))
+      if(e&&e.out&&outWeek[bid]==null) outWeek[bid]=w;
+  const ownerOf={};
+  for(const pk of L.draft.picks) ownerOf[pk.bakerId]=pk.playerId;
+
+  const bakerTotals={},team={},pred={},record={},byWeek={};
+  for(const b of L.config.bakers) bakerTotals[b.id]=0;
+  for(const p of L.config.players){ team[p.id]=0; pred[p.id]=0; record[p.id]={hits:0,of:0}; byWeek[p.id]={}; }
+
+  for(const w of recorded){
+    const wk=entries(w);
+    for(const b of bakers()){
+      if(outWeek[b.id]!=null&&outWeek[b.id]<w) continue;
+      const pts=pointsFor(wk[b.id]);
+      bakerTotals[b.id]+=pts;
+      const o=ownerOf[b.id];
+      if(o&&team[o]!=null){ team[o]+=pts; byWeek[o][w]=(byWeek[o][w]||0)+pts; }
+    }
+  }
+
+  const weekGrades={};
+  for(let w=1;w<=WEEKS;w++){
+    const res=weekResults(w); if(!res.recorded) continue;
+    const wp=L.picks["w"+w]||{}; weekGrades[w]={};
+    for(const [pid,pk] of Object.entries(wp)){
+      if(pred[pid]==null||!pk) continue;
+      let pts=0,hits=0,of=0; const marks={};
+      if(res.star){ of++; marks.star=pk.star===res.star; if(marks.star){pts+=r.pStar;hits++;} }
+      if(res.tech){ of++; marks.tech=pk.tech===res.tech; if(marks.tech){pts+=r.pTech;hits++;} }
+      if(res.outs.length){ of++; marks.out=res.outs.includes(pk.out); if(marks.out){pts+=r.pOut;hits++;} }
+      if(of===3&&hits===3) pts+=r.pSweep;
+      pred[pid]+=pts; record[pid].hits+=hits; record[pid].of+=of;
+      byWeek[pid][w]=(byWeek[pid][w]||0)+pts;
+      weekGrades[w][pid]={pts,marks};
+    }
+  }
+
+  const sres=seasonResults(); const seasonGrades={};
+  if(sres.settled)
+    for(const [pid,sp] of Object.entries(L.season)){
+      if(pred[pid]==null||!sp) continue;
+      let pts=0;
+      const correct=(sp.finalists||[]).filter(Boolean).filter(b=>sres.finalists.includes(b));
+      pts+=correct.length*r.pFinalist;
+      if(sres.finalists.length>=3&&correct.length>=3) pts+=r.pFinalAll;
+      if(sres.winner&&sp.winner===sres.winner) pts+=r.pWinner;
+      pred[pid]+=pts; seasonGrades[pid]={pts};
+    }
+
+  const grand={};
+  for(const p of L.config.players) grand[p.id]=team[p.id]+pred[p.id];
+  return {recorded,outWeek,ownerOf,bakerTotals,team,pred,record,grand,byWeek,weekGrades,seasonGrades,sres};
+}
+
+function draftInfo(){
+  const ps=players(),bs=bakers();
+  const order=L.draft.order.filter(id=>ps.some(p=>p.id===id));
+  const rounds=ps.length?Math.floor(bs.length/ps.length):0;
+  const seq=[];
+  if(order.length===ps.length&&ps.length)
+    for(let rd=0;rd<rounds;rd++) seq.push(...(rd%2===0?order:[...order].reverse()));
+  const picks=L.draft.picks;
+  return {ps,bs,order,rounds,seq,picks,
+    onClock:picks.length<seq.length?seq[picks.length]:null,
+    complete:seq.length>0&&picks.length>=seq.length};
+}
+
+/* ---------------- view state ---------------- */
+
+let tab="table",week=1,openRow=null,suspend=false;
+const firstOpenWeek=()=>{ for(let w=1;w<=WEEKS;w++) if(!weekRecorded(w)) return w; return WEEKS; };
+const TABS=[["table","Table"],["picks","Picks"],["score","Score"],["draft","Draft"],["setup","Setup"]];
+
+function bunting(){
+  const cols=["var(--jam)","var(--butter)","var(--leaf)","var(--card)"];
+  let s="<path d='M0 2 Q120 8 240 2' stroke='var(--line)' stroke-width='1' fill='none'/>";
+  for(let i=0;i<24;i++)
+    s+="<polygon points='"+(i*10)+",3 "+(i*10+9)+",3 "+(i*10+4.5)+",14' fill='"+cols[i%4]+"' opacity='.9'/>";
+  document.getElementById("bunting").innerHTML=s;
+}
+
+function modeBanner(){
+  if(!cfg) return '<div class="mode"><span class="dot"></span><span>Solo on this device. '+
+    'Open Setup to connect the league and get a share link.</span></div>';
+  return '<div class="mode"><span class="dot'+(live?" live":" bad")+'"></span><span>'+
+    (live?"Synced with the league.":"Offline. Changes save here and send when you reconnect.")+'</span></div>';
+}
+
+const bakerOptions=(list,sel,ph)=>'<option value="">'+esc(ph)+'</option>'+
+  list.map(b=>'<option value="'+b.id+'"'+(sel===b.id?" selected":"")+'>'+esc(b.name)+'</option>').join("");
+
+function viewTable(T){
+  const ps=players();
+  if(!ps.length) return '<div class="empty"><h3>No league yet</h3><p>Add four player names in Setup, '+
+    'then run the draft.</p><button class="btn primary" data-act="go" data-tab="setup">Go to setup</button></div>';
+  const ranked=[...ps].sort((a,b)=>T.grand[b.id]-T.grand[a.id]);
+  const last=T.recorded.length?T.recorded[T.recorded.length-1]:null;
+
+  let h='<div class="tally">';
+  ranked.forEach((p,i)=>{
+    const roster=L.draft.picks.filter(k=>k.playerId===p.id).map(k=>bakerById(k.bakerId)).filter(Boolean);
+    const alive=roster.filter(b=>T.outWeek[b.id]==null).length;
+    const move=last!=null?T.byWeek[p.id][last]:null;
+    h+='<div class="row'+(i===0?" leader":"")+'"><button class="rowhead" data-act="expand" data-id="'+p.id+'">'+
+      '<span class="rank">'+(i+1)+'</span><span class="who"><span class="name">'+esc(p.name)+'</span>'+
+      '<span class="sub">'+T.team[p.id]+' team, '+T.pred[p.id]+' calls'+
+      (move!=null?' &middot; '+(move>=0?"+":"")+move+' in week '+last:'')+'</span></span>'+
+      '<span class="score">'+T.grand[p.id]+'</span></button>';
+    if(openRow===p.id){
+      h+='<div class="roster">';
+      if(!roster.length) h+='<p class="sub pad">Nothing drafted yet.</p>';
+      roster.forEach(b=>{
+        const gone=T.outWeek[b.id];
+        h+='<div class="rosterrow'+(gone?" gone":"")+'">'+avatar(b.name)+
+          '<span><span class="name">'+esc(b.name)+'</span><br><span class="sub">'+
+          (gone?"out, week "+gone:esc(b.region||"in the tent"))+'</span></span>'+
+          '<span class="num">'+T.bakerTotals[b.id]+'</span></div>';
+      });
+      const r=T.record[p.id];
+      h+='<p class="sub pad">'+(roster.length?alive+' of '+roster.length+' still baking. ':'')+
+        (r.of?r.hits+' of '+r.of+' calls right.':'No calls graded yet.')+'</p></div>';
+    }
+    h+='</div>';
+  });
+  h+='</div>';
+
+  if(T.recorded.length)
+    h+='<div class="panel"><h2>Week by week</h2><div class="gridscroll"><table class="grid"><thead><tr><th></th>'+
+      T.recorded.map(w=>'<th>'+w+'</th>').join("")+'</tr></thead><tbody>'+
+      ranked.map(p=>'<tr><th>'+esc(p.name)+'</th>'+
+        T.recorded.map(w=>'<td class="num small">'+(T.byWeek[p.id][w]||0)+'</td>').join("")+'</tr>').join("")+
+      '</tbody></table></div><p class="footnote">Team points and call points combined.</p></div>';
+  return '<div class="stack">'+h+'</div>';
+}
+
+function viewPicks(T){
+  const ps=players(),bs=bakers();
+  if(!ps.length||!bs.length) return '<div class="empty"><h3>Nothing to predict yet</h3>'+
+    '<p>Add the players in Setup first.</p></div>';
+  if(!me) return '<div class="panel"><h2>Who is holding this phone?</h2>'+
+    '<p class="sub">Your calls are stored against your name. Pick yourself once and this device remembers.</p>'+
+    '<select class="field" data-act="setme"><option value="">Choose your name</option>'+
+    ps.map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join("")+'</select></div>';
+
+  const locked=weekLocked(week),res=weekResults(week);
+  const mine=(L.picks["w"+week]||{})[me]||{};
+  const alive=bs.filter(b=>T.outWeek[b.id]==null||T.outWeek[b.id]>=week);
+
+  let h='<div class="weekbar"><button class="step" data-act="w-" aria-label="Previous week">&lsaquo;</button>'+
+    '<div class="weeklabel"><span class="big">Week '+week+'</span><span class="sub">'+
+    (locked?"calls locked":"calls open")+'</span></div>'+
+    '<button class="step" data-act="w+" aria-label="Next week">&rsaquo;</button></div>';
+
+  if(!locked){
+    h+='<div class="panel"><h2>Your calls for week '+week+'</h2>'+
+      '<label class="picklabel">Star Baker</label><select class="field" data-act="pick" data-field="star">'+
+      bakerOptions(alive,mine.star,"No pick yet")+'</select>'+
+      '<label class="picklabel">Wins the technical</label><select class="field" data-act="pick" data-field="tech">'+
+      bakerOptions(alive,mine.tech,"No pick yet")+'</select>'+
+      '<label class="picklabel">Goes home</label><select class="field" data-act="pick" data-field="out">'+
+      bakerOptions(alive,mine.out,"No pick yet")+'</select><div class="statusline">'+
+      ps.map(p=>{ const k=(L.picks["w"+week]||{})[p.id]; const d=k&&k.star&&k.tech&&k.out;
+        return '<span class="status'+(d?" in":"")+'">'+esc(p.name)+' '+(d?"in":"waiting")+'</span>'; }).join("")+
+      '</div><button class="btn quiet" data-act="lockweek">Lock week '+week+' for everyone</button>'+
+      '<p class="footnote">Calls stay hidden from the others until the week locks. It locks by itself the '+
+      'moment any week '+week+' result is entered.</p></div>';
+  } else {
+    h+='<div class="panel"><div class="banner"><h2 style="margin:0">Week '+week+' calls</h2>'+
+      (!res.recorded?'<button class="chip" data-act="unlockweek">Unlock</button>':'')+'</div>';
+    if(!res.recorded) h+='<p class="sub">Waiting on results. Enter them in Score.</p>';
+    ps.forEach(p=>{
+      const k=(L.picks["w"+week]||{})[p.id], g=(T.weekGrades[week]||{})[p.id];
+      if(!k){ h+='<div class="revealcard"><div class="revealhead"><span class="name">'+esc(p.name)+
+        '</span><span class="sub">no calls made</span></div></div>'; return; }
+      const cell=(l,id,mk)=>'<div class="call'+(mk===true?" hit":mk===false?" miss":"")+'"><span>'+l+
+        '</span><b>'+esc(nameOf(id))+'</b></div>';
+      h+='<div class="revealcard"><div class="revealhead"><span class="name">'+esc(p.name)+
+        '</span><span class="num">'+(g?(g.pts>0?"+"+g.pts:g.pts):"&ndash;")+'</span></div><div class="calls">'+
+        cell("Star",k.star,g&&g.marks.star)+cell("Technical",k.tech,g&&g.marks.tech)+
+        cell("Home",k.out,g&&g.marks.out)+'</div></div>';
+    });
+    h+='</div>';
+  }
+
+  const sm=L.season[me]||{};
+  h+='<div class="panel"><h2>Final three and winner</h2>';
+  if(!seasonLocked()){
+    const fin=sm.finalists||[];
+    const opts=i=>bs.filter(b=>!fin.some((f,j)=>f===b.id&&j!==i));
+    h+='<p class="sub">Lock these in after episode one and before episode two. They close by themselves as '+
+      'soon as any week 2 result is entered.</p>';
+    for(let i=0;i<3;i++)
+      h+='<label class="picklabel">Finalist '+(i+1)+'</label><select class="field" data-act="finalist" data-idx="'+i+'">'+
+        bakerOptions(opts(i),fin[i],"No pick yet")+'</select>';
+    h+='<label class="picklabel">Wins the whole thing</label><select class="field" data-act="winnerpick">'+
+      bakerOptions(bs,sm.winner,"No pick yet")+'</select><div class="statusline">'+
+      ps.map(p=>{ const s=L.season[p.id];
+        const d=s&&(s.finalists||[]).filter(Boolean).length===3&&s.winner;
+        return '<span class="status'+(d?" in":"")+'">'+esc(p.name)+' '+(d?"in":"waiting")+'</span>'; }).join("")+
+      '</div><button class="btn quiet" data-act="lockseason">Lock everyone&rsquo;s season calls</button>';
+  } else {
+    const sr=T.sres;
+    ps.forEach(p=>{
+      const s=L.season[p.id];
+      if(!s){ h+='<div class="revealcard"><div class="revealhead"><span class="name">'+esc(p.name)+
+        '</span><span class="sub">no calls made</span></div></div>'; return; }
+      const g=T.seasonGrades[p.id];
+      h+='<div class="revealcard"><div class="revealhead"><span class="name">'+esc(p.name)+
+        '</span><span class="num">'+(g?"+"+g.pts:"&ndash;")+'</span></div><div class="calls">'+
+        (s.finalists||[]).map(f=>'<div class="call'+(sr.settled?(sr.finalists.includes(f)?" hit":" miss"):"")+
+          '"><span>Final three</span><b>'+esc(nameOf(f))+'</b></div>').join("")+'</div>'+
+        '<div class="calls" style="grid-template-columns:1fr;margin-top:6px"><div class="call'+
+        (sr.winner?(sr.winner===s.winner?" hit":" miss"):"")+'"><span>Winner</span><b>'+
+        esc(nameOf(s.winner))+'</b></div></div></div>';
+    });
+  }
+  h+='</div>';
+  return '<div class="stack">'+h+'</div>';
+}
+
+function viewScore(T){
+  if(!L.draft.picks.length) return '<div class="empty"><h3>Draft first</h3>'+
+    '<p>Team points go to whoever drafted the baker.</p>'+
+    '<button class="btn primary" data-act="go" data-tab="draft">Go to draft</button></div>';
+  const wk=entries(week);
+  const active=bakers().filter(b=>T.outWeek[b.id]==null||T.outWeek[b.id]>=week);
+  const techLabel=t=>t==="last"?"Tech last":t?"Tech "+t:"Technical";
+
+  let h='<div class="weekbar"><button class="step" data-act="w-" aria-label="Previous week">&lsaquo;</button>'+
+    '<div class="weeklabel"><span class="big">Week '+week+'</span><span class="sub">'+active.length+
+    ' bakers left</span></div><button class="step" data-act="w+" aria-label="Next week">&rsaquo;</button></div>';
+
+  active.forEach(b=>{
+    const e=wk[b.id]||{}, owner=playerById(T.ownerOf[b.id]);
+    const pts=weekRecorded(week)?pointsFor(e):null;
+    h+='<div class="bakercard'+(e.out?" out":"")+'"><div class="bakerhead"><div class="bakerid">'+
+      avatar(b.name,true)+'<div><div class="name">'+esc(b.name)+'</div><div class="sub">'+
+      (owner?esc(owner.name):"undrafted")+'</div></div></div><div class="pts">'+
+      (pts==null?"&ndash;":(pts>0?"+"+pts:pts))+'</div></div><div class="chips">'+
+      '<button class="chip'+(e.sb?" on":"")+'" data-act="chip" data-b="'+b.id+'" data-k="sb">Star Baker</button>'+
+      '<button class="chip'+(e.hs?" on":"")+'" data-act="chip" data-b="'+b.id+'" data-k="hs">Handshake'+
+      (e.hs?" &times;"+e.hs:"")+'</button>'+
+      '<button class="chip'+(e.tech?" on":"")+'" data-act="chip" data-b="'+b.id+'" data-k="tech">'+
+      techLabel(e.tech)+'</button>'+
+      '<button class="chip danger'+(e.out?" on":"")+'" data-act="chip" data-b="'+b.id+'" data-k="out">Eliminated</button>'+
+      (week>=8?'<button class="chip'+(e.final?" on":"")+'" data-act="chip" data-b="'+b.id+'" data-k="final">Finalist</button>'+
+        '<button class="chip'+(e.winner?" on":"")+'" data-act="chip" data-b="'+b.id+'" data-k="winner">Winner</button>':'')+
+      '</div></div>';
+  });
+  if(weekRecorded(week)) h+='<button class="btn quiet" data-act="clearweek">Clear week '+week+'</button>';
+  h+='<p class="footnote">Everyone still in the tent picks up '+L.config.rules.survive+
+    ' points a week automatically. Entering anything here locks that week&rsquo;s calls and grades them.</p>';
+  return '<div class="stack">'+h+'</div>';
+}
+
+function viewDraft(){
+  const d=draftInfo();
+  if(d.ps.length<2||d.bs.length<d.ps.length) return '<div class="empty"><h3>Not enough entered</h3>'+
+    '<p>Add your players in Setup first.</p>'+
+    '<button class="btn primary" data-act="go" data-tab="setup">Go to setup</button></div>';
+  if(!d.order.length) return '<div class="panel"><h2>Set the draft order</h2><p class="sub">'+d.rounds+
+    ' rounds, snake order, so whoever picks last in round one picks first in round two.</p>'+
+    '<button class="btn primary" data-act="randomize">Draw order at random</button></div>';
+
+  const taken=new Set(d.picks.map(p=>p.bakerId));
+  const avail=d.bs.filter(b=>!taken.has(b.id));
+  const pn=id=>(playerById(id)||{}).name||"";
+
+  let h='<div class="panel"><div class="orderline">'+d.order.map((id,i)=>
+    '<span class="orderpill"><span class="num">'+(i+1)+'</span> '+esc(pn(id))+'</span>').join("")+'</div>'+
+    (d.complete?'<p class="sub">Draft complete. '+d.picks.length+' picks made.</p>':
+      '<p class="onclock"><span class="num">Pick '+(d.picks.length+1)+'</span> &middot; '+esc(pn(d.onClock))+
+      ' is up'+(me===d.onClock?", that is you":"")+'</p>')+'</div>';
+  if(!d.complete)
+    h+='<div class="panel"><h2>Available bakers</h2><div class="pickgrid">'+avail.map(b=>
+      '<button class="pickbtn" data-act="draftpick" data-b="'+b.id+'">'+avatar(b.name)+
+      '<span>'+esc(b.name)+'<br><span class="sub">'+esc(b.region||"")+'</span></span></button>').join("")+
+      '</div></div>';
+  h+='<div class="panel"><h2>Board</h2><div class="board">'+d.ps.map(p=>
+    '<div class="boardcol"><div class="boardhead">'+esc(p.name)+'</div>'+
+    d.picks.filter(k=>k.playerId===p.id).map(k=>'<div class="boardpick">'+esc(nameOf(k.bakerId))+'</div>').join("")+
+    '</div>').join("")+'</div>'+
+    (d.picks.length?'<button class="btn quiet" data-act="undo">Undo last pick</button>':'')+'</div>';
+  return '<div class="stack">'+h+'</div>';
+}
+
+function viewConnect(){
+  if(cfg){
+    return '<div class="panel"><h2>The league link</h2>'+
+      '<p class="sub">Send this to the other three. It carries the league with it, so they just open it and '+
+      'add it to their home screen.</p>'+
+      '<input class="field" id="sharebox" readonly value="'+esc(shareLink())+'">'+
+      '<button class="btn primary" data-act="copylink">Copy the link</button>'+
+      '<p class="footnote">Anyone with this link can read and change the league. That is the only lock on it, '+
+      'so treat it like a door key.</p>'+
+      '<button class="btn quiet" data-act="disconnect">Leave this league on this device</button></div>';
+  }
+  return '<div class="panel"><h2>Connect the league</h2>'+
+    '<p class="sub">One free Firebase database holds the league so all four of you share it. Five minutes, once.</p>'+
+    '<ol class="steps">'+
+    '<li>Go to console.firebase.google.com and click Create a project. Any name. Turn Analytics off.</li>'+
+    '<li>In the left menu open Build, then Realtime Database, then Create Database. Pick any location and '+
+    'choose <b>Start in test mode</b>.</li>'+
+    '<li>Open the Rules tab, replace everything with the block below, and press Publish.</li>'+
+    '<li>Back on the Data tab, copy the URL shown at the top. It ends in firebaseio.com or firebasedatabase.app.</li>'+
+    '<li>Paste it here and press Create the league.</li></ol>'+
+    '<pre class="code" id="rulesbox">'+esc(DB_RULES)+'</pre>'+
+    '<button class="btn quiet" data-act="copyrules">Copy the rules</button>'+
+    '<label class="picklabel">Your database URL</label>'+
+    '<input class="field" id="dburl" placeholder="https://your-project-default-rtdb.firebaseio.com">'+
+    '<button class="btn primary" data-act="doconnect">'+(connecting?"Connecting…":"Create the league")+'</button>'+
+    (connectMsg?'<p class="footnote" style="color:var(--jam)">'+esc(connectMsg)+'</p>':'')+
+    '<p class="footnote">Those rules let anyone who knows the exact league id read and write that one league, '+
+    'and nothing else. The id is 18 random characters, generated on this device.</p></div>';
+}
+
+function viewSetup(){
+  const rule=([k,label])=>'<div class="ruleline"><span>'+label+'</span><input class="numfield" type="number" '+
+    'data-act="rule" data-k="'+k+'" value="'+L.config.rules[k]+'"></div>';
+  let h=viewConnect();
+  h+='<div class="panel"><h2>Players</h2>'+
+    L.config.players.map((p,i)=>'<input class="field" data-act="player" data-id="'+p.id+'" value="'+
+      esc(p.name)+'" placeholder="Player '+(i+1)+'">').join("")+
+    '<label class="picklabel">Which one are you on this device?</label>'+
+    '<select class="field" data-act="setme"><option value="">Not set</option>'+
+    players().map(p=>'<option value="'+p.id+'"'+(me===p.id?" selected":"")+'>'+esc(p.name)+'</option>').join("")+
+    '</select></div>';
+  h+='<div class="panel"><h2>The line-up</h2><p class="sub">Series 17, as announced. Edit any name, or add '+
+    'your own note to each baker.</p>'+
+    L.config.bakers.map(b=>'<div class="setuprow">'+avatar(b.name)+
+      '<input class="field" data-act="baker" data-id="'+b.id+'" value="'+esc(b.name)+'" placeholder="Baker">'+
+      '</div><input class="field" data-act="note" data-id="'+b.id+'" value="'+esc(b.note||"")+
+      '" placeholder="'+esc(b.region||"note")+'">').join("")+
+    '<button class="btn quiet" data-act="addbaker">Add another slot</button></div>';
+  h+='<div class="panel"><h2>Team scoring</h2>'+TEAM_RULES.map(rule).join("")+'</div>';
+  h+='<div class="panel"><h2>Call scoring</h2>'+PICK_RULES.map(rule).join("")+'</div>';
+  h+='<div class="panel"><h2>Danger zone</h2><p class="sub">Wipes the draft, every call and all results, '+
+    'for everyone on the league.</p><button class="btn danger" data-act="reset">Clear everything</button></div>';
+  return '<div class="stack">'+h+'</div>';
+}
+
+function render(){
+  if(suspend) return;
+  const T=totals();
+  const body = tab==="table"?viewTable(T) : tab==="picks"?viewPicks(T)
+    : tab==="score"?viewScore(T) : tab==="draft"?viewDraft() : viewSetup();
+  document.getElementById("main").innerHTML = modeBanner()+body;
+  document.getElementById("nav").innerHTML = TABS.map(([id,label])=>
+    '<button class="navbtn'+(tab===id?" active":"")+'" data-act="go" data-tab="'+id+'">'+label+'</button>').join("");
+}
+
+/* ---------------- actions ---------------- */
+
+const saveConfig=()=>push("config",L.config);
+const saveDraft =()=>push("draft",L.draft);
+const saveWeek  =w=>push("results/w"+w,L.results["w"+w]||null);
+const saveMyPicks=w=>push("picks/w"+w+"/"+me,(L.picks["w"+w]||{})[me]||null);
+const saveMySeason=()=>push("season/"+me,L.season[me]||null);
+
+function copyText(text,btn){
+  const done=()=>{ if(btn){ const t=btn.textContent; btn.textContent="Copied"; setTimeout(()=>btn.textContent=t,1500); } };
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(text).then(done,()=>fallback());
+  else fallback();
+  function fallback(){
+    const ta=document.createElement("textarea");
+    ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); done(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+document.addEventListener("click", async e=>{
+  const t=e.target.closest("[data-act]"); if(!t) return;
+  const a=t.dataset.act;
+
+  if(a==="go"){ tab=t.dataset.tab; if(tab==="picks"||tab==="score") week=firstOpenWeek(); render(); return; }
+  if(a==="expand"){ openRow=openRow===t.dataset.id?null:t.dataset.id; render(); return; }
+  if(a==="w-"){ week=Math.max(1,week-1); render(); return; }
+  if(a==="w+"){ week=Math.min(WEEKS,week+1); render(); return; }
+
+  if(a==="doconnect"){
+    const el=document.getElementById("dburl");
+    connecting=true; connectMsg=""; suspend=false; render();
+    try{ await connect(el?el.value:""); connectMsg=""; }
+    catch(err){ connectMsg=err.message||String(err); }
+    connecting=false; render(); return;
+  }
+  if(a==="copylink"){ copyText(shareLink(),t); return; }
+  if(a==="copyrules"){ copyText(DB_RULES,t); return; }
+  if(a==="disconnect"){
+    if(!confirm("Stop syncing on this device? The league stays on the database.")) return;
+    cfg=null; try{ localStorage.removeItem(LSS); }catch(e2){}
+    if(es){ es.close(); es=null; } live=false; render(); return;
+  }
+
+  if(a==="chip"){
+    const bid=t.dataset.b,k=t.dataset.k,key="w"+week;
+    L.results[key]=L.results[key]||{};
+    const e2={...(L.results[key][bid]||{})};
+    if(k==="hs") e2.hs=((e2.hs||0)+1)%3;
+    else if(k==="tech"){ const o=[null,1,2,3,"last"]; e2.tech=o[(o.indexOf(e2.tech??null)+1)%o.length]; }
+    else e2[k]=!e2[k];
+    L.results[key][bid]=e2; saveWeek(week); render(); return;
+  }
+  if(a==="clearweek"){ delete L.results["w"+week]; saveWeek(week); render(); return; }
+  if(a==="lockweek"){ L.config.locks[week]=true; saveConfig(); render(); return; }
+  if(a==="unlockweek"){ delete L.config.locks[week]; saveConfig(); render(); return; }
+  if(a==="lockseason"){ L.config.seasonLocked=true; saveConfig(); render(); return; }
+
+  if(a==="randomize"){
+    const ids=players().map(p=>p.id);
+    for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
+    L.draft={order:ids,picks:[]}; saveDraft(); render(); return;
+  }
+  if(a==="draftpick"){
+    const d=draftInfo(); if(!d.onClock) return;
+    if(L.draft.picks.some(p=>p.bakerId===t.dataset.b)) return;
+    L.draft.picks.push({bakerId:t.dataset.b,playerId:d.onClock}); saveDraft(); render(); return;
+  }
+  if(a==="undo"){ L.draft.picks.pop(); saveDraft(); render(); return; }
+  if(a==="addbaker"){ L.config.bakers.push({id:"b"+Date.now(),name:"",region:"",note:""}); saveConfig(); render(); return; }
+  if(a==="reset"){
+    if(!confirm("Delete the draft, every call and all results, for everyone?")) return;
+    L=blank(); saveConfig(); saveDraft();
+    for(let w=1;w<=WEEKS;w++){ push("results/w"+w,null); push("picks/w"+w,null); }
+    push("season",null); render(); return;
+  }
+});
+
+document.addEventListener("change", e=>{
+  const t=e.target.closest("[data-act]"); if(!t) return;
+  const a=t.dataset.act,v=t.value;
+  if(a==="setme"){ setMe(v); render(); return; }
+  if(a==="pick"){
+    const key="w"+week; L.picks[key]=L.picks[key]||{};
+    L.picks[key][me]={...(L.picks[key][me]||{}),[t.dataset.field]:v};
+    saveMyPicks(week); render(); return;
+  }
+  if(a==="finalist"){
+    const s=L.season[me]||{finalists:[],winner:""};
+    const f=[...(s.finalists||[])]; f[+t.dataset.idx]=v;
+    L.season[me]={...s,finalists:f}; saveMySeason(); render(); return;
+  }
+  if(a==="winnerpick"){ L.season[me]={...(L.season[me]||{finalists:[]}),winner:v}; saveMySeason(); render(); return; }
+  if(a==="player"){ const p=playerById(t.dataset.id); if(p) p.name=v; saveConfig(); render(); return; }
+  if(a==="baker"){ const b=bakerById(t.dataset.id); if(b) b.name=v; saveConfig(); render(); return; }
+  if(a==="note"){ const b=bakerById(t.dataset.id); if(b) b.note=v; saveConfig(); return; }
+  if(a==="rule"){ const n=parseInt(v,10); L.config.rules[t.dataset.k]=Number.isFinite(n)?n:0; saveConfig(); render(); return; }
+});
+
+document.addEventListener("focusin", e=>{ if(e.target.matches("input")&&e.target.id!=="sharebox") suspend=true; });
+document.addEventListener("focusout", e=>{ if(e.target.matches("input")&&e.target.id!=="sharebox"){ suspend=false; render(); } });
+
+/* ---------------- boot ---------------- */
+
+(async function(){
+  loadCfg();
+  const cached=lsRead(); if(cached) merge(cached);
+  bunting(); week=firstOpenWeek(); render();
+  await pull(); week=firstOpenWeek(); render();
+  listen();
+  setInterval(async()=>{ if(document.visibilityState==="visible"&&!suspend){ await pull(); render(); } },25000);
+})();
+</script>
+</body>
+</html>
