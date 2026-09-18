@@ -449,7 +449,9 @@ function draftInfo(){
 
 /* ---------------- view state ---------------- */
 
-let tab="table",week=1,openRow=null,suspend=false;
+let tab="table",week=1,openRow=null,suspend=false,dbUrlDraft="";
+let deferTimer=null;
+function deferRender(){ clearTimeout(deferTimer); deferTimer=setTimeout(render,300); }
 const firstOpenWeek=()=>{ for(let w=1;w<=WEEKS;w++) if(!weekRecorded(w)) return w; return WEEKS; };
 const TABS=[["table","Table"],["picks","Picks"],["score","Score"],["draft","Draft"],["setup","Setup"]];
 
@@ -764,8 +766,9 @@ document.addEventListener("click", async e=>{
 
   if(a==="doconnect"){
     const el=document.getElementById("dburl");
+    const raw=(el&&el.value)||dbUrlDraft||"";
     connecting=true; connectMsg=""; suspend=false; render();
-    try{ await connect(el?el.value:""); connectMsg=""; }
+    try{ await connect(raw); connectMsg=""; dbUrlDraft=""; }
     catch(err){ connectMsg=err.message||String(err); }
     connecting=false; render(); return;
   }
@@ -826,14 +829,15 @@ document.addEventListener("change", e=>{
     L.season[me]={...s,finalists:f}; saveMySeason(); render(); return;
   }
   if(a==="winnerpick"){ L.season[me]={...(L.season[me]||{finalists:[]}),winner:v}; saveMySeason(); render(); return; }
-  if(a==="player"){ const p=playerById(t.dataset.id); if(p) p.name=v; saveConfig(); render(); return; }
-  if(a==="baker"){ const b=bakerById(t.dataset.id); if(b) b.name=v; saveConfig(); render(); return; }
+  if(a==="player"){ const p=playerById(t.dataset.id); if(p) p.name=v; saveConfig(); deferRender(); return; }
+  if(a==="baker"){ const b=bakerById(t.dataset.id); if(b) b.name=v; saveConfig(); deferRender(); return; }
   if(a==="note"){ const b=bakerById(t.dataset.id); if(b) b.note=v; saveConfig(); return; }
-  if(a==="rule"){ const n=parseInt(v,10); L.config.rules[t.dataset.k]=Number.isFinite(n)?n:0; saveConfig(); render(); return; }
+  if(a==="rule"){ const n=parseInt(v,10); L.config.rules[t.dataset.k]=Number.isFinite(n)?n:0; saveConfig(); deferRender(); return; }
 });
 
 document.addEventListener("focusin", e=>{ if(e.target.matches("input")&&e.target.id!=="sharebox") suspend=true; });
-document.addEventListener("focusout", e=>{ if(e.target.matches("input")&&e.target.id!=="sharebox") setTimeout(()=>{ suspend=false; render(); },0); });
+document.addEventListener("focusout", e=>{ if(e.target.matches("input")&&e.target.id!=="sharebox") suspend=false; });
+document.addEventListener("input", e=>{ if(e.target.id==="dburl") dbUrlDraft=e.target.value; });
 
 /* ---------------- boot ---------------- */
 
