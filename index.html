@@ -833,7 +833,7 @@ document.addEventListener("change", e=>{
 });
 
 document.addEventListener("focusin", e=>{ if(e.target.matches("input")&&e.target.id!=="sharebox") suspend=true; });
-document.addEventListener("focusout", e=>{ if(e.target.matches("input")&&e.target.id!=="sharebox"){ suspend=false; render(); } });
+document.addEventListener("focusout", e=>{ if(e.target.matches("input")&&e.target.id!=="sharebox") setTimeout(()=>{ suspend=false; render(); },0); });
 
 /* ---------------- boot ---------------- */
 
