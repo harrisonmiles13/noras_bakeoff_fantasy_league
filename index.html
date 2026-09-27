@@ -197,7 +197,7 @@ function blank(){
     config:{
       players:[1,2,3,4].map(i=>({id:"p"+i,name:""})),
       bakers:SERIES17.map(([id,name,region])=>({id,name,region,note:""})),
-      rules:{...DEFAULTS}, locks:{}, seasonLocked:false
+      rules:{...DEFAULTS}, locks:{}, seasonLocked:false, reopened:{}, seasonReopened:false
     },
     draft:{order:[],picks:[]}, results:{}, picks:{}, season:{}
   };
@@ -252,7 +252,7 @@ function merge(remote){
   const b=blank(), c=remote.config||{};
   L={
     config:{...b.config, ...c,
-      rules:{...DEFAULTS,...(c.rules||{})}, locks:c.locks||{},
+      rules:{...DEFAULTS,...(c.rules||{})}, locks:c.locks||{}, reopened:c.reopened||{},
       players:c.players||b.config.players, bakers:c.bakers||b.config.bakers},
     draft:{order:(remote.draft||{}).order||[],picks:(remote.draft||{}).picks||[]},
     results:remote.results||{}, picks:remote.picks||{}, season:remote.season||{}
@@ -360,8 +360,10 @@ function seasonResults(){
   if(winner&&!finalists.includes(winner)) finalists.push(winner);
   return {finalists,winner,settled:finalists.length>0||!!winner};
 }
-const weekLocked=w=>!!L.config.locks[w]||weekRecorded(w);
-const seasonLocked=()=>!!L.config.seasonLocked||weekRecorded(2);
+/* reopened[w] / seasonReopened override the automatic lock, so calls can be
+   reopened after a result was entered too early without deleting that result */
+const weekLocked=w=>!L.config.reopened[w]&&(!!L.config.locks[w]||weekRecorded(w));
+const seasonLocked=()=>!L.config.seasonReopened&&(!!L.config.seasonLocked||weekRecorded(2));
 
 function pointsFor(e){
   const r=L.config.rules,x=e||{}; let p=0;
@@ -402,7 +404,7 @@ function totals(){
 
   const weekGrades={};
   for(let w=1;w<=WEEKS;w++){
-    const res=weekResults(w); if(!res.recorded) continue;
+    const res=weekResults(w); if(!res.recorded||!weekLocked(w)) continue;
     const wp=L.picks["w"+w]||{}; weekGrades[w]={};
     for(const [pid,pk] of Object.entries(wp)){
       if(pred[pid]==null||!pk) continue;
@@ -418,7 +420,7 @@ function totals(){
   }
 
   const sres=seasonResults(); const seasonGrades={};
-  if(sres.settled)
+  if(sres.settled&&seasonLocked())
     for(const [pid,sp] of Object.entries(L.season)){
       if(pred[pid]==null||!sp) continue;
       let pts=0;
@@ -546,11 +548,14 @@ function viewPicks(T){
       ps.map(p=>{ const k=(L.picks["w"+week]||{})[p.id]; const d=k&&k.star&&k.tech&&k.out;
         return '<span class="status'+(d?" in":"")+'">'+esc(p.name)+' '+(d?"in":"waiting")+'</span>'; }).join("")+
       '</div><button class="btn quiet" data-act="lockweek">Lock week '+week+' for everyone</button>'+
-      '<p class="footnote">Calls stay hidden from the others until the week locks. It locks by itself the '+
-      'moment any week '+week+' result is entered.</p></div>';
+      (L.config.reopened[week]
+        ?'<p class="footnote">Reopened by hand. Results already entered for week '+week+' are kept, but it will '+
+          'not lock by itself again. Press lock once everyone is in.</p></div>'
+        :'<p class="footnote">Calls stay hidden from the others until the week locks. It locks by itself the '+
+          'moment any week '+week+' result is entered.</p></div>');
   } else {
     h+='<div class="panel"><div class="banner"><h2 style="margin:0">Week '+week+' calls</h2>'+
-      (!res.recorded?'<button class="chip" data-act="unlockweek">Unlock</button>':'')+'</div>';
+      '<button class="chip" data-act="unlockweek">'+(res.recorded?"Reopen calls":"Unlock")+'</button></div>';
     if(!res.recorded) h+='<p class="sub">Waiting on results. Enter them in Score.</p>';
     ps.forEach(p=>{
       const k=(L.picks["w"+week]||{})[p.id], g=(T.weekGrades[week]||{})[p.id];
@@ -571,8 +576,10 @@ function viewPicks(T){
   if(!seasonLocked()){
     const fin=sm.finalists||[];
     const opts=i=>bs.filter(b=>!fin.some((f,j)=>f===b.id&&j!==i));
-    h+='<p class="sub">Lock these in after episode one and before episode two. They close by themselves as '+
-      'soon as any week 2 result is entered.</p>';
+    h+=L.config.seasonReopened
+      ?'<p class="sub">Reopened by hand. They will not close by themselves again, so lock them once everyone is in.</p>'
+      :'<p class="sub">Lock these in after episode one and before episode two. They close by themselves as '+
+        'soon as any week 2 result is entered.</p>';
     for(let i=0;i<3;i++)
       h+='<label class="picklabel">Finalist '+(i+1)+'</label><select class="field" data-act="finalist" data-idx="'+i+'">'+
         bakerOptions(opts(i),fin[i],"No pick yet")+'</select>';
@@ -584,6 +591,7 @@ function viewPicks(T){
       '</div><button class="btn quiet" data-act="lockseason">Lock everyone&rsquo;s season calls</button>';
   } else {
     const sr=T.sres;
+    h+='<button class="chip" data-act="unlockseason">Reopen season calls</button>';
     ps.forEach(p=>{
       const s=L.season[p.id];
       if(!s){ h+='<div class="revealcard"><div class="revealhead"><span class="name">'+esc(p.name)+
@@ -790,9 +798,17 @@ document.addEventListener("click", async e=>{
     L.results[key][bid]=e2; saveWeek(week); render(); return;
   }
   if(a==="clearweek"){ delete L.results["w"+week]; saveWeek(week); render(); return; }
-  if(a==="lockweek"){ L.config.locks[week]=true; saveConfig(); render(); return; }
-  if(a==="unlockweek"){ delete L.config.locks[week]; saveConfig(); render(); return; }
-  if(a==="lockseason"){ L.config.seasonLocked=true; saveConfig(); render(); return; }
+  if(a==="lockweek"){ L.config.locks[week]=true; delete L.config.reopened[week]; saveConfig(); render(); return; }
+  if(a==="unlockweek"){
+    if(weekRecorded(week)&&!confirm("Reopen week "+week+" calls? Results already entered are kept, and the calls grade again when you lock the week.")) return;
+    delete L.config.locks[week]; if(weekRecorded(week)) L.config.reopened[week]=true;
+    saveConfig(); render(); return;
+  }
+  if(a==="lockseason"){ L.config.seasonLocked=true; L.config.seasonReopened=false; saveConfig(); render(); return; }
+  if(a==="unlockseason"){
+    if(!confirm("Reopen everyone's season calls? Nothing is deleted.")) return;
+    L.config.seasonLocked=false; L.config.seasonReopened=true; saveConfig(); render(); return;
+  }
 
   if(a==="randomize"){
     const ids=players().map(p=>p.id);
